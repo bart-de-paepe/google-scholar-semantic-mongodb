@@ -112,8 +112,12 @@ class SemanticSearchService:
         self.db_service.set_collection("embeddings")
         result = self.db_service.aggregate(pipeline)
         score = 0
-        if len(result) > 0:
-            score = result[0]['score']
+        score_set = False
+        for score_record in result:
+            if not score_set:
+                score = score_record["score"]
+                score_set = True
+
         return score
 
     def convert_distance_to_score(self, distance):
