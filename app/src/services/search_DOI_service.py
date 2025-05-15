@@ -49,6 +49,21 @@ class SearchDOIService:
         link_cursor.close()
         return link_and_media_type_and_title_object
 
+    def get_link_and_media_type_and_title_and_email(self, search_result_id):
+        where = {"_id": search_result_id}
+        what = {"link": 1, "_id": 0, "media_type": 1, "title": 1, "email": 1}
+        self.db_service.set_collection("search_results")
+        link_cursor = self.db_service.select_what_where(what, where)
+        link = link_cursor.next()
+        if 'media_type' in link:
+            link_and_media_type_and_title_and_email_object = {"link": Link(url=link['link']['url']),
+                                                    "media_type": link['media_type'], "title": link['title'], "email": link['email']}
+        else:
+            link_and_media_type_and_title_and_email_object = {"link": Link(url=link['link']['url']), "media_type": "",
+                                                    "title": link['title'], "email": link['email']}
+        link_cursor.close()
+        return link_and_media_type_and_title_and_email_object
+
     def get_link(self):
         return self.link
 

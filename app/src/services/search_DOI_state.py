@@ -1,6 +1,6 @@
 from abc import ABC  # Abstract Base Class
 def get_all_states():
-    return ["unprocessed", "replaced", "link_searched", "content_searched", "embedded_searched"]
+    return ["unprocessed", "replaced", "link_searched", "crossref_searched", "content_searched", "embedded_searched"]
 
 class SearchDOIState(ABC):
     def __init__(self, search_doi_service):

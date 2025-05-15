@@ -12,6 +12,10 @@ from app.src.services import parse_service
 from app.src.services import search_DOI_service
 from app.src.services import semantic_search_service
 
+from dotenv import load_dotenv
+load_dotenv()
+IMIS = os.getenv('IMIS')
+
 
 class Container(containers.DeclarativeContainer):
 
@@ -62,8 +66,10 @@ class Container(containers.DeclarativeContainer):
         logging_service=logging_service,
     )
 
-    semantic_search_service = providers.Factory(
+    semantic_search_service = providers.Singleton(
         semantic_search_service.SemanticSearchService,
+        collection='embeddings',
+        imis_query=IMIS,
         db_service=db_service,
         logging_service=logging_service,
     )

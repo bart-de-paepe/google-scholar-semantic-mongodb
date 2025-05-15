@@ -15,7 +15,9 @@ load_dotenv()
 IMIS = os.getenv('IMIS')
 
 class SemanticSearchService:
-    def __init__(self, db_service: DBService, logging_service: LoggingService):
+    def __init__(self, collection: str, imis_query: str, db_service: DBService, logging_service: LoggingService):
+        self.collection = collection
+        self.imis_query = imis_query
         self.db_service = db_service
         self.logging_service = logging_service
         self.model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
@@ -29,7 +31,7 @@ class SemanticSearchService:
         docs = []
         data = []
         embeddings = []
-        result = requests.get(IMIS)
+        result = requests.get(self.imis_query)
         publications = result.json()
         for publication in publications:
             data.append(publication['StandardTitle'])
@@ -42,7 +44,7 @@ class SemanticSearchService:
                 "embedding": embedding,
             }
             docs.append(doc)
-        self.db_service.set_collection("embeddings")
+        self.db_service.set_collection(self.collection)
         self.db_service.insert_many(docs)
 
     def create_search_index(self):
@@ -109,7 +111,7 @@ class SemanticSearchService:
                 }
             }
         ]
-        self.db_service.set_collection("embeddings")
+        self.db_service.set_collection(self.collection)
         result = self.db_service.aggregate(pipeline)
         score = 0
         score_set = False

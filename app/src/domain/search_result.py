@@ -7,7 +7,8 @@ class SearchResult(Entity):
         self.title = title
         self.author = author
         self.publisher = publisher
-        self.date = date
+        self.date = None
+        self.set_date(date)
         self.text = text
         self.link = Link(url=link)
         self.media_type = media_type
@@ -15,3 +16,7 @@ class SearchResult(Entity):
         self.is_processed = False
         self.score = 0
         super().__init__()
+
+    def set_date(self, date):
+        if date is not None and date.isnumeric():
+            self.date = date

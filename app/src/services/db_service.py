@@ -51,4 +51,7 @@ class DBService:
     def aggregate(self, pipeline):
         return self.collection.aggregate(pipeline)
 
+    def drop_collection(self):
+        self.db.drop_collection(self.collection)
+
 

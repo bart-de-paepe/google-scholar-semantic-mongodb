@@ -33,6 +33,16 @@ class ParseService:
         body_cursor.close()
         return email_body
 
+    # for every _id get the corresponding subject
+    def get_email_subject(self, email_id):
+        where = {"_id": email_id}
+        what = {"subject": 1, "_id": 0}
+        self.db_service.set_collection("emails")
+        subject_cursor = self.db_service.select_what_where(what, where)
+        subject = subject_cursor.next()
+        subject_cursor.close()
+        return subject['subject']
+
     """
         <h3 style="font-weight:normal;margin:0;font-size:17px;line-height:20px;">
             <span style="font-size:11px;font-weight:bold;color:#1a0dab;vertical-align:2px">[HTML]</span> 
@@ -105,13 +115,18 @@ class ParseService:
                 for pub in range(0, len(publisher_year_parts) - 1):
                     publisher = publisher + publisher_year_parts[pub] + ", "
                 publisher = publisher.rstrip(", ")
+                publisher = publisher.strip()
                 date = publisher_year_parts[len(publisher_year_parts) - 1]
+                date = date.strip()
             else:
-                self.raise_google_scholar_format(email_id, publisher_year_parts[0],
-                                                 "Problem with Google Scholar publisher and date: ")
+                date = publisher_year_parts[0].strip()
+                publisher = ""
+                #self.raise_google_scholar_format(email_id, publisher_year_parts[0], "Problem with Google Scholar publisher and date: ")
         else:
-            self.raise_google_scholar_format(email_id, author_publisher_year,
-                                             "Problem with Google Scholar authors, publisher and date: ")
+            author = author_publisher_year_parts
+            publisher = ""
+            date = ""
+            #self.raise_google_scholar_format(email_id, author_publisher_year, "Problem with Google Scholar authors, publisher and date: ")
 
         return {
             "link": link,

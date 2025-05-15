@@ -1,7 +1,9 @@
 import re
 from datetime import datetime, timezone
+from ssl import SSLError
 
-from httpx import Client
+import httpx
+from httpx import Client, ConnectError, HTTPError
 from pymupdf import pymupdf
 
 
@@ -21,7 +23,15 @@ def do_external_request(url, follow_redirect):
         "Accept-Language": "en-US,en;q=0.9,lt;q=0.8,et;q=0.7,de;q=0.6",
     }
     client = Client(headers=headers, follow_redirects=follow_redirect)
-    response = client.get(url)
+    try:
+        response = client.get(url)
+    except (SSLError, ConnectError, HTTPError) as error:
+        response = httpx.Response(
+            status_code=500,
+            content=b'Server Error: Something went wrong!',
+            headers={'Content-Type': 'text/plain'},
+            request=httpx.Request('GET', url)
+        )
     return response
 
 def search_in_text(text, link):
@@ -89,3 +99,15 @@ def get_patterns():
 def printable_date_time_now():
     current_datetime = datetime.now(timezone.utc)
     return current_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def filter_email_subject(email_subject):
+    match = re.search(r'"([^"]*)"', email_subject)  # search the first occurence of text between double quotes
+    if match is not None:
+        mailboxname = match.group(1).replace(' ', '-')
+    else:
+        match = re.search(r'^[^:]+', email_subject)  # match everything before colon (:)
+        if match is not None:
+            mailboxname = match.group(0).replace(' ', '-')
+        else:
+            mailboxname = "Spam"
+    return mailboxname

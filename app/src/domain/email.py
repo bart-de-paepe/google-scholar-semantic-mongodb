@@ -29,4 +29,4 @@ class Email(Entity):
         if re.search(pattern, self.sender, re.IGNORECASE):
             self.is_spam = False
         else:
-            self.is_spam = True
+            self.is_spam = False

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from app.src.domain.email import Email
 from app.src.services.db_service import DBService
 from app.src.services.logging_service import LoggingService
-from app.src.shared.helper import escape_double_quotes, printable_date_time_now
+from app.src.shared.helper import escape_double_quotes, printable_date_time_now, filter_email_subject
 
 load_dotenv()
 MAIL_SERVER = os.getenv('MAIL_SERVER')
@@ -105,9 +105,7 @@ class EmailService:
             if match is not None:
                 mailboxname = match.group(1).replace(' ', '-')
             else:
-                match = re.search(r'^[^:]+', current_email.subject)  # match everything before colon (:)
-                if match is not None:
-                    mailboxname = match.group(0).replace(' ', '-')
+                mailboxname = filter_email_subject(current_email.subject)
 
         mailbox.copy(email_id, mailboxname)
         mailbox.store(email_id, '+FLAGS', r'(\Deleted)')

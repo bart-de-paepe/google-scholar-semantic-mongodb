@@ -131,12 +131,13 @@ def process_search_doi(
                     "is_processed": current_search_result.is_processed,
                 }
                 parse_service.update_search_result(search_result_update_what, search_result_update_where)
-                # reset the state for the next search result
-                search_doi_service.reset_state()
             except HTTPError as error:
                 print(error)
             except Timeout as error:
                 print(error)
+            finally:
+                # reset the state for the next search result
+                search_doi_service.reset_state()
     except ConnectionError as error:
         print(error)
 
