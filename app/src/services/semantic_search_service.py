@@ -15,14 +15,15 @@ load_dotenv()
 IMIS = os.getenv('IMIS')
 
 class SemanticSearchService:
-    def __init__(self, collection: str, imis_query: str, db_service: DBService, logging_service: LoggingService):
+    def __init__(self, collection: str, db_service: DBService, logging_service: LoggingService):
         self.collection = collection
-        self.imis_query = imis_query
+        self.imis_query = None
         self.db_service = db_service
         self.logging_service = logging_service
         self.model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
-        self.initialize_embeddings()
-        self.create_search_index()
+
+    def set_imis(self, imis_query: str):
+        self.imis_query = imis_query
 
     def get_embedding(self, data, precision="float32"):
         return self.model.encode(data, precision=precision).tolist()
@@ -45,6 +46,7 @@ class SemanticSearchService:
             }
             docs.append(doc)
         self.db_service.set_collection(self.collection)
+        self.db_service.drop_collection()
         self.db_service.insert_many(docs)
 
     def create_search_index(self):
@@ -62,7 +64,7 @@ class SemanticSearchService:
             name="vector_index",
             type="vectorSearch"
         )
-        self.db_service.set_collection("embeddings")
+        self.db_service.set_collection(self.collection)
         self.db_service.create_search_index(model=search_index_model)
 
 
@@ -70,6 +72,20 @@ class SemanticSearchService:
     def get_unprocessed_ids(self):
         where = {"link.is_DOI_success": False, "link.is_processed": False}
         what = {"_id": 1}
+        self.db_service.set_collection("search_results")
+        unprocessed_ids = self.db_service.select_what_where(what, where)
+        return unprocessed_ids
+
+    def get_iteration_ids(self):
+        where = {"link.is_DOI_success": False}
+        what = {"_id": 1}
+        self.db_service.set_collection("search_results")
+        unprocessed_ids = self.db_service.select_what_where(what, where)
+        return unprocessed_ids
+
+    def get_iteration_scores(self, search_result_id):
+        where = {"_id": search_result_id}
+        what = {"iteration_1": 1, "iteration_2": 1, "iteration_3": 1, "iteration_4": 1, "iteration_5": 1, "iteration_6": 1, "iteration_7": 1, "iteration_8": 1, "iteration_9": 1, "iteration_10": 1, "iteration_11": 1, "iteration_12": 1, "iteration_13": 1, "iteration_14": 1, "iteration_15": 1, "iteration_16": 1, "iteration_17": 1, "iteration_18": 1, "iteration_19": 1, "iteration_20": 1, "iteration_21": 1, "iteration_22": 1, "iteration_23": 1, "iteration_24": 1, "iteration_25": 1, "iteration_26": 1, "_id": 0}
         self.db_service.set_collection("search_results")
         unprocessed_ids = self.db_service.select_what_where(what, where)
         return unprocessed_ids

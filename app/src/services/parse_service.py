@@ -182,7 +182,6 @@ class ParseService:
         self.db_service.set_collection("search_results")
         result = self.db_service.update_one_what_where(search_result_update_what, search_result_update_where)
 
-
     def get_current_search_result(self, search_result_id):
         self.db_service.set_collection("search_results")
         result = self.db_service.select_one(search_result_id)

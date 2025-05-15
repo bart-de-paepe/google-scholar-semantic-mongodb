@@ -1,3 +1,6 @@
+import os
+from time import sleep
+
 import click
 from dependency_injector.wiring import Provide, inject
 from requests import HTTPError, Timeout
@@ -9,6 +12,8 @@ from app.src.services.parse_service import ParseService
 from app.src.services.search_DOI_service import SearchDOIService
 from app.src.services.semantic_search_service import SemanticSearchService
 
+from dotenv import load_dotenv
+load_dotenv()
 
 @click.group()
 def cli():
@@ -179,31 +184,86 @@ def process_semantic_search(
         semantic_search_service: SemanticSearchService = Provide[Container.semantic_search_service],
         parse_service: ParseService = Provide[Container.parse_service],
 ):  #python -m app.src.main process-semantic-search
-    unprocessed_ids = semantic_search_service.get_unprocessed_ids()
+    for i in range(1, 27):
+        IMIS = os.getenv(f'IMIS_{i}')
+        semantic_search_service.set_imis(IMIS)
+        semantic_search_service.initialize_embeddings()
+        semantic_search_service.create_search_index()
+        sleep(10)
+        unprocessed_ids = semantic_search_service.get_iteration_ids()
+        for search_result_id in unprocessed_ids:
+            search_result_title = semantic_search_service.get_title(search_result_id['_id'])
+            score = semantic_search_service.do_semantic_search(search_result_title)
+            # add the distance to the search result
+            search_result_update_where = {
+                "_id": search_result_id['_id'],
+            }
+            current_link = semantic_search_service.get_current_link(search_result_id['_id'])
+            current_link.is_processed = True
+            current_search_result = parse_service.get_current_search_result(search_result_id['_id'])
+            current_search_result.score = score
+            iteration_column = f"iteration_{i}"
+            search_result_update_what = {
+                "link": {
+                    "url": current_link.url,
+                    "location_replace_url": current_link.location_replace_url,
+                    "response_code": current_link.response_code,
+                    "response_type": current_link.response_type,
+                    "is_accepted_type": current_link.is_accepted_type,
+                    "DOI": current_link.doi,
+                    "log_message": current_link.log_message,
+                    "is_DOI_success": current_link.is_doi_success,
+                    "is_processed": current_link.is_processed
+                },
+                iteration_column: current_search_result.score,
+            }
+            parse_service.update_search_result(search_result_update_what, search_result_update_where)
+
+    unprocessed_ids = semantic_search_service.get_iteration_ids()
     for search_result_id in unprocessed_ids:
-        search_result_title = semantic_search_service.get_title(search_result_id['_id'])
-        score = semantic_search_service.do_semantic_search(search_result_title)
-        # add the distance to the search result
+        maximum = 0
+        scores = semantic_search_service.get_iteration_scores(search_result_id['_id'])
+        scores = scores.to_list()
+        # scores_list = []
+        # for score in scores:
+        #     scores_list.append(score)
+        # scores_list.append(scores['iteration_1'])
+        # scores_list.append(scores['iteration_2'])
+        # scores_list.append(scores['iteration_3'])
+        # scores_list.append(scores['iteration_4'])
+        # scores_list.append(scores['iteration_5'])
+        # scores_list.append(scores['iteration_6'])
+        # scores_list.append(scores['iteration_7'])
+        # scores_list.append(scores['iteration_8'])
+        # scores_list.append(scores['iteration_9'])
+        # scores_list.append(scores['iteration_10'])
+        # scores_list.append(scores['iteration_11'])
+        # scores_list.append(scores['iteration_12'])
+        # scores_list.append(scores['iteration_13'])
+        # scores_list.append(scores['iteration_14'])
+        # scores_list.append(scores['iteration_15'])
+        # scores_list.append(scores['iteration_16'])
+        # scores_list.append(scores['iteration_17'])
+        # scores_list.append(scores['iteration_18'])
+        # scores_list.append(scores['iteration_19'])
+        # scores_list.append(scores['iteration_20'])
+        # scores_list.append(scores['iteration_21'])
+        # scores_list.append(scores['iteration_22'])
+        # scores_list.append(scores['iteration_23'])
+        # scores_list.append(scores['iteration_24'])
+        # scores_list.append(scores['iteration_25'])
+        # scores_list.append(scores['iteration_26'])
+
+        counter = 1
+        for score in scores:
+            if score[f"iteration_{counter+1}"] > maximum:
+                maximum = score[f"iteration_{counter+1}"]
+            counter += 1
         search_result_update_where = {
             "_id": search_result_id['_id'],
         }
-        current_link = semantic_search_service.get_current_link(search_result_id['_id'])
-        current_link.is_processed = True
-        current_search_result = parse_service.get_current_search_result(search_result_id['_id'])
-        current_search_result.score = score
         search_result_update_what = {
-            "link": {
-                "url": current_link.url,
-                "location_replace_url": current_link.location_replace_url,
-                "response_code": current_link.response_code,
-                "response_type": current_link.response_type,
-                "is_accepted_type": current_link.is_accepted_type,
-                "DOI": current_link.doi,
-                "log_message": current_link.log_message,
-                "is_DOI_success": current_link.is_doi_success,
-                "is_processed": current_link.is_processed
-            },
-            "score": current_search_result.score,
+            "max_score": maximum,
         }
         parse_service.update_search_result(search_result_update_what, search_result_update_where)
 
